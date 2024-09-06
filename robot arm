@@ -1,0 +1,120 @@
+import cv2
+import numpy as np
+import math
+import serial.tools.list_ports
+import keyboard
+import time
+
+
+ports = serial.tools.list_ports.comports()
+serialInst = serial.Serial()
+
+portsList = []
+
+for onePort in ports:
+    portsList.append(str(onePort))
+    print(str(onePort))
+
+val = input("select Port : COM ")    
+
+for x in range(0,len(portsList)):
+    if portsList[x].startswith("COM"+str(val)):
+        portVar =  "COM" + str(val)
+        print(portVar)
+
+serialInst.baudrate = 115200
+serialInst.port = portVar
+serialInst.open()
+
+
+frameWidth = 800
+frameHeight = 1800
+cap = cv2.VideoCapture(1)
+cap.set(3, frameWidth)
+cap.set(4, frameHeight)
+"""
+def find_x_y():
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area > 1000:
+            cv2.drawContours(frame0, cnt, -1,(255,0,255), 7)
+            peri = cv2.arcLength(cnt,True)
+            approx = cv2.approxPolyDP(cnt, 0.02*peri, True)
+            #print(len(approx))
+            x,y,w,h = cv2.boundingRect(approx)
+            return(x,y)
+"""
+while True :
+    check , frame0 = cap.read() 
+    #image = cv2.imread("C:/Users/gongk/Downloads/robotarm/e.jpg") 
+    #image_re = cv2.resize(frame0,(800,400))
+    imagegray =cv2.cvtColor(frame0,cv2.COLOR_BGR2GRAY)
+    threshold,th1 =cv2.threshold(imagegray,80,255,cv2.THRESH_BINARY_INV)
+    contours, hierarchy =cv2.findContours(th1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+
+    
+
+    cv2.drawContours(frame0,contours,0, (128,255,128 ), 4)
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area > 1000:
+            cv2.drawContours(frame0, cnt, -1,(255,0,255), 7)
+            peri = cv2.arcLength(cnt,True)
+            approx = cv2.approxPolyDP(cnt, 0.02*peri, True)
+            #print(len(approx))
+            x,y,w,h = cv2.boundingRect(approx)
+            cv2.rectangle(frame0,(x, y), (x + w, y + h), (0, 255, 0), 5)
+            cv2.putText(frame0, "Points: "+ str(len(approx)) ,(x + w + 20, y+ 20),cv2.FONT_HERSHEY_DUPLEX,0.7,(0,255,0), 2)
+            cv2.putText(frame0, "Area: "+ str(int(area)) ,(x + w + 20, y+ 45),cv2.FONT_HERSHEY_DUPLEX,0.7,(0,255,0), 2)
+            #print("x : "+ str(x) ,"y : "+ str(y),"w : " + str(w),"h : " + str(h))
+            #cv2.putText(frame0, "+",(x+12, y+25),cv2.FONT_HERSHEY_DUPLEX,0.7,(128,128,0), 3) #ลองเล่นดู
+            a = math.sqrt(area)/2
+            b = math.sqrt(area)/2
+            z = (x+int(a)) #ตำแหน่ง x
+            c = (y+int(b+10)) #ตำแหน่ง y
+            cv2.putText(frame0, "+",(x+int(a), y+int(b+10)),cv2.FONT_HERSHEY_DUPLEX,0.7,(128,128,0), 3)
+            cv2.putText(frame0, ".",(x + int(a-235) , y + int(b+200)),cv2.FONT_HERSHEY_DUPLEX,0.7,(0,255,255), 2)
+
+            
+            #if keyboard.is_pressed('a'):
+            #command = str(z+117) + str(c-148)
+            command = str(z) + str(c)
+            command1 = str(command)
+            serialInst.write(command1.encode('utf-8'))
+            time.sleep(1)
+            print("SUCCESS")
+            print(z,c)
+                
+            
+            
+
+            if len(approx) == 4:
+               cv2.putText(frame0, "Square" ,(x + w + 20, y-20),cv2.FONT_HERSHEY_DUPLEX,0.7,(0,255,0), 2)
+               #a = math.sqrt(area)/2
+               #b = math.sqrt(area)/2
+               #print(a)
+               #result_area_square = math.sqrt
+            elif len(approx) == 3:
+               cv2.putText(frame0, "triangle" ,(x + w + 20, y-20),cv2.FONT_HERSHEY_DUPLEX,0.7,(0,255,0), 2)
+            else :
+               cv2.putText(frame0, "Circle" ,(x + w + 20, y-20),cv2.FONT_HERSHEY_DUPLEX,0.7,(0,255,0), 2)
+            """
+            if keyboard.read_key() == "a":
+                command = str(x) + str(y)
+                serialInst.write(command.encode('utf-8'))
+                time.sleep(1)
+                print("SUCCESS")
+                print(x,y)
+            
+            else:
+                continue
+            """
+    
+    if cv2.waitKey(1) &0xff == ord("e"):
+        break
+
+    cv2.imshow("Output",frame0)
+    cv2.imshow("output",th1)
+    time.sleep(0.25)
+cv2.destroyAllWindows()
